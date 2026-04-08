@@ -6,7 +6,7 @@ class StaticValue
 {
     private:
         static int value; // data a metody deklarované jako static patří třídě, přístup k nim mají i objekty
-        //StaticValue();
+        //StaticValue();   
 
     public:
         static void IncValue();
