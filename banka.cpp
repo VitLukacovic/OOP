@@ -50,6 +50,7 @@ class Account
 {
     private:
         static int objectsCount;
+        static double defaultInterestRate;
         int number;
         double balance;
         double interestRate;
@@ -59,6 +60,8 @@ class Account
 
     public:
         static int GetObjectsCount();
+        static double GetDefaultInterestRate();
+        static void SetDefaultInterestRate(double ir);
         Account(int n, Client *c);
         Account(int n, Client *c, double ir);
         Account(int n, Client *c, Client *p);
@@ -80,10 +83,21 @@ class Account
 };
 
 int Account::objectsCount = 0;
+double Account::defaultInterestRate = 0.01;
 
 int Account::GetObjectsCount()
 {
     return Account::objectsCount;
+}
+
+double Account::GetDefaultInterestRate()
+{
+    return Account::defaultInterestRate;
+}
+
+void Account::SetDefaultInterestRate(double ir)
+{
+    Account::defaultInterestRate = ir;
 }
 
 Account::Account(int n, Client *c)
@@ -92,25 +106,22 @@ Account::Account(int n, Client *c)
     this->owner = c;
     this->partner = nullptr;
     this->balance = 0.0;
-    this->interestRate = 0.0;
+    this->interestRate = -1.0;
 
     Account::objectsCount += 1;
 }
 
-Account::Account(int n, Client *c, double ir)
-    : Account(n, c)
+Account::Account(int n, Client *c, double ir) : Account(n, c)
 {
     this->interestRate = ir;
 }
 
-Account::Account(int n, Client *c, Client *p)
-    : Account(n, c)
+Account::Account(int n, Client *c, Client *p) : Account(n, c)
 {
     this->partner = p;
 }
 
-Account::Account(int n, Client *c, Client *p, double ir)
-    : Account(n, c, p)
+Account::Account(int n, Client *c, Client *p, double ir) : Account(n, c, p)
 {
     this->interestRate = ir;
 }
@@ -131,7 +142,11 @@ double Account::GetBalance()
 }
 
 double Account::GetInterestRate() 
-{ 
+{
+    if(this->interestRate < 0.0)
+    {
+        return Account::defaultInterestRate;
+    }
     return this->interestRate;
 }
 
@@ -170,7 +185,7 @@ bool Account::Withdraw(double a)
 
 void Account::AddInterest()
 {
-    this->balance += this->balance * this->interestRate;
+    this->balance += this->balance * this->GetInterestRate();
 }
 
 void Account::SetInterestRate(double ir)
@@ -181,7 +196,6 @@ void Account::SetInterestRate(double ir)
 class Bank
 {
     private:
-        static double interestRate;
         Client** clients;
         int clientsCount;
 
@@ -189,7 +203,6 @@ class Bank
         int accountsCount;
 
     public:
-        static double GetInterestRate();
         Bank(int c, int a);
         ~Bank();
 
@@ -202,17 +215,8 @@ class Bank
         Account* CreateAccount(int n, Client *c, Client *p);
         Account* CreateAccount(int n, Client *c, Client *p, double ir);
 
-        void ChangeInterestRate();
-
         void AddInterest();
 };
-
-double Bank::interestRate = 0.03;
-
-double Bank::GetInterestRate()
-{
-    return Bank::interestRate;
-}
 
 Bank::Bank(int c, int a)
 {
@@ -221,17 +225,6 @@ Bank::Bank(int c, int a)
 
     this->accountsCount = 0;
     this->accounts = new Account*[a];
-}
-
-void Bank::ChangeInterestRate()
-{
-    for(int i = 0; i < accountsCount; i++)
-    {
-        if(accounts[i]->GetInterestRate() == 0.00)
-        {
-            accounts[i]->SetInterestRate(Bank::interestRate);
-        }
-    }
 }
 
 Bank::~Bank()
@@ -342,18 +335,25 @@ int main()
     }
 
     // Simulace výběrů
-    for(int i = 0; i < 5; i++)
+    for(int i = 0; i < 5; i++) // prvních 5 klientů vybírá
     {
-        bool success = accounts[i]->Withdraw(200.0); // první 5 klientů vybírá
-        cout << "Withdraw for " << accounts[i]->GetOwner()->GetName()
-             << " successful? " << (success ? "Yes" : "No") << endl;
+        bool success = accounts[i]->Withdraw(200.0);
+        cout << "Vyber klienta " << accounts[i]->GetOwner()->GetName();
+        if(success)
+        {
+            cout << " uspesny " << endl;
+        }
+        else
+        {
+            cout << " neuspesny " << endl;
+        }
     }
 
     // Přidání úroku všem účtům
     myBank.AddInterest();
 
-    // Výpis zůstatků všech účtů
-    cout << "\n--- Account balances after deposits, withdrawals, and interest ---\n";
+    // Výpis zůstatků všech účtech
+    cout << "\n--- Vypis zustatku na uctech ---\n";
     for(int i = 0; i < 10; i++)
     {
         cout << accounts[i]->GetOwner()->GetName() << ": "
@@ -363,11 +363,42 @@ int main()
     // Test hledání účtu a klienta
     Account* accSearch = myBank.GetAccount(2003);
     if(accSearch)
-        cout << "\nFound account 2003, owner: " << accSearch->GetOwner()->GetName() << endl;
+    {
+        cout << "\nUcet 2003 nalezen, vlastnik: " << accSearch->GetOwner()->GetName() << endl;
+    }
+
 
     Client* clientSearch = myBank.GetClient(1005);
     if(clientSearch)
-        cout << "Found client 1005: " << clientSearch->GetName() << endl;
+    {
+        cout << "Klient 1005 nalezen: " << clientSearch->GetName() << endl;
+    }
+
+    // Test statické úrokové sazby
+    Client* c1 = myBank.CreateClient(1, "Jan Novak");
+    Client* c2 = myBank.CreateClient(2, "Petr Pavel");
+
+    Account* acc1 = myBank.CreateAccount(1, c1);
+    Account* acc2 = myBank.CreateAccount(2, c2, 0.05);
+
+    acc1->Deposit(1000);
+    acc2->Deposit(1000);
+
+    cout << "\n--- Vychozi stav (Sazba tridy nastaveni na 1 %) ---" << endl;
+    cout << "Ucet 1: " << acc1->GetInterestRate() * 100 << " %" << endl;
+    cout << "Ucet 2: " << acc2->GetInterestRate() * 100 << " %" << endl;
+
+    Account::SetDefaultInterestRate(0.03);
+
+    cout << "\n--- Stav po zmene sazby tridy na 3 % ---" << endl;
+    cout << "Ucet 1: " << acc1->GetInterestRate() * 100 << " %" << endl;
+    cout << "Ucet 2: " << acc2->GetInterestRate() * 100 << " %" << endl;
+
+    myBank.AddInterest();
+    cout << "\n--- Zustatky po pripsani uroku ---" << endl;
+    cout << "Ucet 1: " << acc1->GetBalance() << " CZK (pripsano 3 % z 1000)" << endl;
+    cout << "Ucet 2: " << acc2->GetBalance() << " CZK (pripsano 5 % z 1000)" << endl;
+
 
     return 0;
 }

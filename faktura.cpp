@@ -79,6 +79,7 @@ class Faktura
         int cislo;
         Osoba osoba;
         PolozkaFaktury** polozky_faktury;
+        int kapacita_polozek;
         int id;
 
     public:
@@ -98,6 +99,7 @@ Faktura::Faktura(int c, int n, string j, string a)
     this->cislo = c;
     this->osoba = Osoba(j, a);
     this->id = 0;
+    this->kapacita_polozek = n;
     this->polozky_faktury = new PolozkaFaktury*[n];
 }
 
@@ -135,6 +137,12 @@ Osoba Faktura::GetOsoba()
 
 PolozkaFaktury* Faktura::CreatePolozka(string n, int p, double c)
 {
+    if (this->id >= this->kapacita_polozek) 
+    {
+        cout << "Faktura je plna, nelze pridat polozku " << n << endl;
+        return nullptr;
+    }
+
     PolozkaFaktury *newObject = new PolozkaFaktury(n, p, c);
 
     this->polozky_faktury[this->id] = newObject;
