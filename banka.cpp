@@ -52,10 +52,13 @@ class Account
         static int objectsCount;
         static double defaultInterestRate;
         int number;
-        double balance;
+
         double interestRate;
 
         Client *owner;
+
+    protected:
+        double balance;
 
     public:
         static int GetObjectsCount();
@@ -63,13 +66,13 @@ class Account
         static void SetDefaultInterestRate(double ir);
         Account(int n, Client *c);
         Account(int n, Client *c, double ir);
-        virtual ~Account();
+        ~Account();
 
         int GetNumber();
         double GetBalance();
         double GetInterestRate();
         Client *GetOwner();
-        bool CanWithdraw(double a);
+        virtual bool CanWithdraw(double a);
 
         void Deposit(double a);
         bool Withdraw(double a);
@@ -88,6 +91,19 @@ class PartnerAccount : public Account
         PartnerAccount(int n, Client *c, Client *p, double ir);
 
         Client *GetPartner();
+};
+
+class CreditAccount : public Account
+{
+    private:
+        double credit;
+
+    public:
+        CreditAccount(int n, Client *o, double c);
+        CreditAccount(int n, Client *o, double ir, double c);
+
+        bool CanWithdraw(double a);
+        bool Withdraw(double a);
 };
 
 int Account::objectsCount = 0;
@@ -131,6 +147,31 @@ PartnerAccount::PartnerAccount(int n, Client *c, Client *p) : Account(n, c)
 PartnerAccount::PartnerAccount(int n, Client *c, Client *p, double ir) : Account(n, c, ir)
 {
     this->partner = p;
+}
+
+CreditAccount::CreditAccount(int n, Client *o, double c) : Account(n, o)
+{
+    this->credit = c;
+}
+
+CreditAccount::CreditAccount(int n, Client *o, double ir, double c) : Account(n, o, ir)
+{
+    this->credit = c;
+}
+
+bool CreditAccount::CanWithdraw(double a)
+{
+    return (this->GetBalance() + this->credit >= a);
+}
+
+bool CreditAccount::Withdraw(double a)
+{
+    if(this->CanWithdraw(a))
+    {
+        this->balance -= a;
+        return true;
+    }
+    return false;
 }
 
 Account::~Account()
@@ -182,7 +223,7 @@ void Account::Deposit(double a)
 
 bool Account::Withdraw(double a)
 {
-    if(CanWithdraw(a))
+    if(this->CanWithdraw(a))
     {
         this->balance -= a;
         return true;
@@ -420,6 +461,19 @@ int main()
 
     cout << myBank->GetClient(1)->GetName() << endl;
     //cout << myBank->GetClient(1)->GetPartner() << endl;
+
+    // test změna chování dědičnosti
+
+    CreditAccount *ca = new CreditAccount(1, o, 1000);
+    cout << ca->CanWithdraw(1000) << endl;
+
+    Account *a1 = ca;
+    cout << a1->CanWithdraw(1000) << endl;
+
+    cout << ca->Withdraw(1000) << endl;
+
+    a1 = nullptr;
+    delete ca;
 
     delete myBank;
 
