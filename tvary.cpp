@@ -171,7 +171,7 @@ Platno::Platno(int kap)
 
 Platno::~Platno()
 {
-    for (int i = 0; i < this->pocetObjektu; i++)
+    for(int i = 0; i < this->pocetObjektu; i++)
     {
         delete this->objekty[i];
     }
