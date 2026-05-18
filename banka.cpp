@@ -46,7 +46,26 @@ string Client::GetName()
     return this->name;
 }
 
-class Account
+class AbstractAccount
+{
+    public:
+        AbstractAccount();
+        virtual ~AbstractAccount();
+
+        virtual bool CanWithdraw(double a) = 0;
+};
+
+AbstractAccount::AbstractAccount()
+{
+    cout << "AbstractAccount constructor" << endl;
+}
+
+AbstractAccount::~AbstractAccount()
+{
+    cout << "AbstractAccount destructor" << endl;
+}
+
+class Account : public AbstractAccount
 {
     private:
         static int objectsCount;
@@ -64,6 +83,7 @@ class Account
         static int GetObjectsCount();
         static double GetDefaultInterestRate();
         static void SetDefaultInterestRate(double ir);
+
         Account(int n, Client *c);
         Account(int n, Client *c, double ir);
         ~Account();
@@ -101,8 +121,9 @@ class CreditAccount : public Account
     public:
         CreditAccount(int n, Client *o, double c);
         CreditAccount(int n, Client *o, double ir, double c);
+        virtual ~CreditAccount();
 
-        bool CanWithdraw(double a);
+        virtual bool CanWithdraw(double a);
         bool Withdraw(double a);
 };
 
@@ -174,9 +195,15 @@ bool CreditAccount::Withdraw(double a)
     return false;
 }
 
+CreditAccount::~CreditAccount()
+{
+    cout << "CreditAccount destructor" << endl;
+}
+
 Account::~Account()
 {
     Account::objectsCount -= 1;
+    cout << "Account destructor" << endl;
 }
 
 int Account::GetNumber()
@@ -357,10 +384,10 @@ void Bank::AddInterest()
 
 int main()
 {
-    // Vytvoření banky
+    // vytvoření banky
     Bank *myBank = new Bank(100, 1000);
 
-    // Vytvoření klientů
+    // vytvoření klientů
     Client* clients[10];
     for(int i = 0; i < 10; i++)
     {
@@ -368,7 +395,7 @@ int main()
         clients[i] = myBank->CreateClient(1000 + i, name);
     }
 
-    // Vytvoření účtů
+    // vytvoření účtů
     Account* accounts[10];
     for(int i = 0; i < 10; i++)
     {
@@ -376,13 +403,13 @@ int main()
         accounts[i] = myBank->CreateAccount(2000 + i, clients[i], 0.02);
     }
 
-    // Simulace vkladů
+    // simulace vkladů
     for(int i = 0; i < 10; i++)
     {
         accounts[i]->Deposit(1000.0 + i*100); // každý klient trochu jiný vklad
     }
 
-    // Simulace výběrů
+    // simulace výběrů
     for(int i = 0; i < 5; i++) // prvních 5 klientů vybírá
     {
         bool success = accounts[i]->Withdraw(200.0);
@@ -397,10 +424,10 @@ int main()
         }
     }
 
-    // Přidání úroku všem účtům
+    // přidání úroku všem účtům
     myBank->AddInterest();
 
-    // Výpis zůstatků všech účtech
+    // výpis zůstatků všech účtech
     cout << "\n--- Vypis zustatku na uctech ---\n";
     for(int i = 0; i < 10; i++)
     {
@@ -408,7 +435,7 @@ int main()
              << accounts[i]->GetBalance() << " CZK" << endl;
     }
 
-    // Test hledání účtu a klienta
+    // test hledání účtu a klienta
     Account* accSearch = myBank->GetAccount(2003);
     if(accSearch)
     {
@@ -422,7 +449,7 @@ int main()
         cout << "Klient 1005 nalezen: " << clientSearch->GetName() << endl;
     }
 
-    // Test statické úrokové sazby
+    // test statické úrokové sazby
     Client* c1 = myBank->CreateClient(10, "Jan Novak");
     Client* c2 = myBank->CreateClient(11, "Petr Pavel");
 
@@ -472,7 +499,17 @@ int main()
 
     cout << ca->Withdraw(1000) << endl;
 
-    a1 = nullptr;
+    // test abstraktni trida
+    cout << "\n--- test abstraktni trida ---" << endl;
+    Client *q = myBank->CreateClient(0, "Jacob");
+    CreditAccount *ca1 = new CreditAccount(2, q, 1000);
+
+    AbstractAccount *aa = ca1;
+    delete aa;
+    delete q;
+
+    cout << "\n--- konec testu ---" << endl;
+
     delete ca;
 
     delete myBank;

@@ -3,7 +3,22 @@
 
 using namespace std;
 
-class Shape
+// 
+// abstraktní třída - nemá žádné proměnné, všechny metody (kromě destruktoru) jsou čistě virtuální (= 0)
+class GeometrickyObjekt
+{
+    public:
+        virtual ~GeometrickyObjekt() {}
+
+        virtual double Obsah() = 0;
+        virtual double Obvod() = 0;
+        virtual void VypisInfo() = 0;
+};
+
+// 2. abstraktní třída - dědí z GeometrickyObjekt
+// - Přidává data (name) a částečně implementuje chování
+// - stále je abstraktní, protože neimplementuje Obsah() a Obvod()
+class Shape : public GeometrickyObjekt
 {
     private:
         string name;
@@ -13,12 +28,10 @@ class Shape
         virtual ~Shape();
 
         string GetName();
+        void Identifikace(); // nevirtuální metoda
         
-        virtual double Obsah();
-        virtual double Obvod();
-        virtual void VypisInfo();
-
-        void Identifikace(); 
+        // Implementujeme pouze jednu čistě virtuální metodu z předka
+        void VypisInfo() override; 
 };
 
 class Obdelnik : public Shape
@@ -30,6 +43,7 @@ class Obdelnik : public Shape
     public:
         Obdelnik(string n, double a, double b);
         
+        // implementace chybějících čistě virtuálních metod
         double Obsah() override;
         double Obvod() override;
         void VypisInfo() override;
@@ -71,29 +85,18 @@ class Platno
         void VypisVsechnyObjekty();
 };
 
-// Metody třídy Shape
+
+// --- metody třídy Shape ---
 Shape::Shape(string n)
 {
     this->name = n;
 }
 
-Shape::~Shape()
-{
-
-}
+Shape::~Shape() {}
 
 string Shape::GetName()
 {
     return this->name;
-}
-
-double Shape::Obsah()
-{
-    return 0.0;
-}
-double Shape::Obvod()
-{
-    return 0.0;
 }
 
 void Shape::VypisInfo()
@@ -106,7 +109,10 @@ void Shape::Identifikace()
     cout << "obecny tvar" << endl;
 }
 
-// Metody třídy Obdelnik 
+// metody Obsah() a Obvod() pro Shape se už neimplemetnují
+
+
+// --- Metody třídy Obdelnik ---
 Obdelnik::Obdelnik(string n, double a, double b) : Shape(n)
 {
     this->stranaA = a;
@@ -125,7 +131,7 @@ double Obdelnik::Obvod()
 
 void Obdelnik::VypisInfo()
 {
-    Shape::VypisInfo();
+    Shape::VypisInfo(); //  částečná implementace z abstraktní třídy
     cout << " - Obdelnik\n| Obsah: " << this->Obsah() << "\n| Obvod: " << this->Obvod() << endl;
 }
 
@@ -134,7 +140,7 @@ void Obdelnik::Identifikace()
     cout << "Obdelnik" << endl;
 }
 
-// Metody třídy Kruh
+// --- metody třídy Kruh ---
 Kruh::Kruh(string n, double r) : Shape(n)
 {
     this->polomer = r;
@@ -142,12 +148,12 @@ Kruh::Kruh(string n, double r) : Shape(n)
 
 double Kruh::Obsah()
 {
-    return this->pi * this->polomer * this->polomer;
+    return Kruh::pi * this->polomer * this->polomer; // použití statické proměnné
 }
 
 double Kruh::Obvod()
 {
-    return 2 * this->pi * this->polomer;
+    return 2 * Kruh::pi * this->polomer;
 }
 
 void Kruh::VypisInfo()
@@ -161,7 +167,7 @@ void Kruh::Identifikace()
     cout << "Kruh" << endl;
 }
 
-// Metody třídy Platno
+// --- metody třídy Platno ---
 Platno::Platno(int kap)
 {
     this->pocetObjektu = 0;
@@ -180,10 +186,7 @@ Platno::~Platno()
 
 Shape* Platno::CreateObdelnik(string n, double a, double b)
 {
-    if(this->pocetObjektu >= this->kapacita)
-    {
-        return nullptr;
-    }
+    if(this->pocetObjektu >= this->kapacita) return nullptr;
     
     Obdelnik* o = new Obdelnik(n, a, b);
     this->objekty[this->pocetObjektu++] = o;
@@ -192,10 +195,7 @@ Shape* Platno::CreateObdelnik(string n, double a, double b)
 
 Shape* Platno::CreateKruh(string n, double r)
 {
-    if(this->pocetObjektu >= this->kapacita)
-    {
-        return nullptr;
-    }
+    if(this->pocetObjektu >= this->kapacita) return nullptr;
     
     Kruh* k = new Kruh(n, r);
     this->objekty[this->pocetObjektu++] = k;
@@ -222,17 +222,17 @@ int main()
 
     cout << "\n--- Virtualni prekryti vs Obycejne prekryti ---" << endl;
     
+    // třída Shape je abstraktní, ale můžeme vytvářet ukazatele jejího typu
     Shape* testovaciObjekt = new Kruh("Testovaci Kruh", 5.0);
 
     // virtuální metoda (pozdní vazba)
-    // Program se za běhu podívá do tabulky virtuálních metod (VMT) a zjistí, že má volat Kruh::Obsah()
     cout << "virtualni Obsah(): " << testovaciObjekt->Obsah() << endl;
 
     // obyčejné překrytí / zastínění (statická vazba)
-    // metoda není virtuální. Kompilátor se rozhoduje striktně podle typu ukazatele (Shape*), Zavolá se kód předka, kód potomka je ignorován.
-
     cout << "nevirtualni Identifikace(): "; 
-    testovaciObjekt->Identifikace(); // Vypíše se chyba
+    testovaciObjekt->Identifikace(); // vypíše se chyba (obecný tvar místo Kruh)
+
+    // pokus o vytvoření instance abstraktní třídy by selhal při kompilaci - Shape* s = new Shape("Tvar")
 
     delete testovaciObjekt;
     delete mojePlatno;
