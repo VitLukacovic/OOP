@@ -2,6 +2,66 @@
 #include <string>
 using namespace std;
 
+template <class T>
+class List
+{
+    private:
+        T* items;
+        int capacity;
+        int count;
+
+    public:
+        List(int cap);
+        ~List();
+
+        void Add(T item);
+        T Get(int index);
+        int GetCount();
+};
+
+template <class T>
+List<T>::List(int cap)
+{
+    this->capacity = cap;
+    this->count = 0;
+    this->items = new T[this->capacity];
+}
+
+template <class T>
+List<T>::~List()
+{
+    delete[] this->items;
+}
+
+template <class T>
+void List<T>::Add(T item)
+{
+    if(this->count < this->capacity)
+    {
+        this->items[this->count++] = item;
+    }
+    else
+    {
+        cout << "Chyba: Kapacita seznamu byla naplnena!" << endl;
+    }
+}
+
+template <class T>
+T List<T>::Get(int index)
+{
+    if(index >= 0 && index < this->count)
+    {
+        return this->items[index];
+    }
+    return T(); 
+}
+
+template <class T>
+int List<T>::GetCount()
+{
+    return this->count;
+}
+
 class Produkt
 {
     protected:
@@ -17,7 +77,6 @@ class Produkt
         virtual string GetDetaily(); // polymorfní metoda pro textové detaily
 };
 
-// --- Potomek: Telefon ---
 class Telefon : public Produkt
 {
     private:
@@ -28,7 +87,6 @@ class Telefon : public Produkt
         string GetDetaily() override;
 };
 
-// --- Potomek: Notebook ---
 class Notebook : public Produkt
 {
     private:
@@ -52,7 +110,6 @@ class Zakaznik
         virtual string GetInfo(); // polymorfní metoda pro informace o zákazníkovi
 };
 
-// --- Potomek: Neregistrovaný uživatel ---
 class NeregistrovanyZakaznik : public Zakaznik
 {
     private:
@@ -63,7 +120,6 @@ class NeregistrovanyZakaznik : public Zakaznik
         string GetInfo() override;
 };
 
-// --- Potomek: Registrovaný uživatel ---
 class RegistrovanyZakaznik : public Zakaznik
 {
     private:
@@ -74,7 +130,6 @@ class RegistrovanyZakaznik : public Zakaznik
         string GetInfo() override;
 };
 
-// --- Potomek: Firma ---
 class Firma : public Zakaznik
 {
     private:
@@ -103,10 +158,8 @@ class PolozkaObjednavky
 class Objednavka
 {
     private:
-        Zakaznik* zakaznik;          // ukazatel na polymorfního zákazníka
-        PolozkaObjednavky** polozky; // dynamické pole ukazatelů na položky
-        int pocetPolozek;
-        int kapacita;
+        Zakaznik* zakaznik;
+        List<PolozkaObjednavky*>* polozky; // využití generické třídy List
 
     public:
         Objednavka(Zakaznik* z, int kapacita);
@@ -117,13 +170,11 @@ class Objednavka
         void VypisSouhrn();
 };
 
-// --- Metody: Produkt ---
 Produkt::Produkt(string nazev, double cena)
 {
     this->nazev = nazev;
     this->cena = cena;
 }
-
 Produkt::~Produkt()
 {
 
@@ -144,7 +195,6 @@ string Produkt::GetDetaily()
     return "Obecny produkt: " + this->nazev + " | Cena: " + to_string(this->cena) + " Kc";
 }
 
-// --- Metody: Telefon ---
 Telefon::Telefon(string nazev, double cena, string os) : Produkt(nazev, cena)
 {
     this->operacniSystem = os;
@@ -155,7 +205,6 @@ string Telefon::GetDetaily()
     return "Telefon: " + this->nazev + " (OS: " + this->operacniSystem + ") | Cena: " + to_string(this->cena) + " Kc";
 }
 
-// --- Metody: Notebook ---
 Notebook::Notebook(string nazev, double cena, int ram) : Produkt(nazev, cena)
 {
     this->kapacitaRAM = ram;
@@ -166,12 +215,10 @@ string Notebook::GetDetaily()
     return "Notebook: " + this->nazev + " (" + to_string(this->kapacitaRAM) + "GB RAM) | Cena: " + to_string(this->cena) + " Kc";
 }
 
-// --- Metody: Zakaznik ---
 Zakaznik::Zakaznik(string jmeno)
 {
     this->jmeno = jmeno;
 }
-
 Zakaznik::~Zakaznik()
 {
 
@@ -187,17 +234,16 @@ string Zakaznik::GetInfo()
     return "Zakaznik: " + this->jmeno;
 }
 
-// --- Metody: NeregistrovanyZakaznik ---
 NeregistrovanyZakaznik::NeregistrovanyZakaznik(string jmeno, string email) : Zakaznik(jmeno)
 {
     this->email = email;
 }
+
 string NeregistrovanyZakaznik::GetInfo()
 {
     return "Jednorazovy nakup bez registrace | Jmeno: " + this->jmeno + " (Kontakt: " + this->email + ")";
 }
 
-// --- Metody: RegistrovanyZakaznik ---
 RegistrovanyZakaznik::RegistrovanyZakaznik(string jmeno, int cisloKarty) : Zakaznik(jmeno)
 {
     this->cisloKarty = cisloKarty;
@@ -208,7 +254,6 @@ string RegistrovanyZakaznik::GetInfo()
     return "Registrovany uzivatel | Jmeno: " + this->jmeno + " (ID Karty: " + to_string(this->cisloKarty) + ")";
 }
 
-// --- Metody: Firma ---
 Firma::Firma(string jmeno, string ico) : Zakaznik(jmeno)
 {
     this->ico = ico;
@@ -218,7 +263,6 @@ string Firma::GetInfo()
     return "Firemni zakaznik | Nazev: " + this->jmeno + " (ICO: " + this->ico + ")";
 }
 
-// --- Metody: PolozkaObjednavky ---
 PolozkaObjednavky::PolozkaObjednavky(Produkt* p, int kusy)
 {
     this->produkt = p;
@@ -245,41 +289,36 @@ double PolozkaObjednavky::SpoctuCenuPolozky()
     return this->produkt->GetCena() * this->pocetKusu;
 }
 
-
-// --- Metody: Objednavka ---
 Objednavka::Objednavka(Zakaznik* z, int kapacita)
 {
     this->zakaznik = z;
-    this->pocetPolozek = 0;
-    this->kapacita = kapacita;
-    this->polozky = new PolozkaObjednavky*[this->kapacita];
+    // inicializace generického listu
+    this->polozky = new List<PolozkaObjednavky*>(kapacita);
 }
 
 Objednavka::~Objednavka()
 {
-    for(int i = 0; i < this->pocetPolozek; i++)
+    // vyčištění samotných položek uložených v listu
+    for(int i = 0; i < this->polozky->GetCount(); i++)
     {
-        delete this->polozky[i];
+        delete this->polozky->Get(i);
     }
-    delete[] this->polozky;
+    // smazání samotného listu
+    delete this->polozky;
 }
 
 void Objednavka::PridejPolozku(Produkt* p, int kusy)
 {
-    if(this->pocetPolozek >= this->kapacita)
-    {
-        return;
-    }
-
-    this->polozky[this->pocetPolozek++] = new PolozkaObjednavky(p, kusy);
+    // přidání položky přes generickou metodu
+    this->polozky->Add(new PolozkaObjednavky(p, kusy));
 }
 
 double Objednavka::SpoctuCelkovouCenu()
 {
     double celkem = 0.0;
-    for (int i = 0; i < this->pocetPolozek; i++)
+    for (int i = 0; i < this->polozky->GetCount(); i++)
     {
-        celkem += this->polozky[i]->SpoctuCenuPolozky();
+        celkem += this->polozky->Get(i)->SpoctuCenuPolozky();
     }
     return celkem;
 }
@@ -290,13 +329,15 @@ void Objednavka::VypisSouhrn()
     cout << "  " << this->zakaznik->GetInfo() << endl;
     cout << "\nPolozky objednavky:" << endl;
     
-    for(int i = 0; i < this->pocetPolozek; i++)
+    for(int i = 0; i < this->polozky->GetCount(); i++)
     {
-        Produkt* p = this->polozky[i]->GetProdukt();
+        PolozkaObjednavky* polozka = this->polozky->Get(i);
+        Produkt* p = polozka->GetProdukt();
+        
         cout << " - " << p->GetNazev() 
              << " | Cena/ks: " << p->GetCena() << " Kc"
-             << " | Pocet: " << this->polozky[i]->GetPocetKusu() << " ks"
-             << " | Celkem: " << this->polozky[i]->SpoctuCenuPolozky() << " Kc" << endl;
+             << " | Pocet: " << polozka->GetPocetKusu() << " ks"
+             << " | Celkem: " << polozka->SpoctuCenuPolozky() << " Kc" << endl;
     }
     cout << "\n";
     cout << "Celkova cena objednavky: " << this->SpoctuCelkovouCenu() << " Kc" << endl;
@@ -329,7 +370,7 @@ int main()
     Objednavka* obj1 = new Objednavka(z1, 5);
     obj1->PridejPolozku(p1, 1); // 1x iPhone
 
-    // registrovaný zákazníkp
+    // registrovaný zákazník
     Objednavka* obj2 = new Objednavka(z2, 5);
     obj2->PridejPolozku(p2, 2); // 2x Samsung
     obj2->PridejPolozku(p3, 1); // 1x MacBook

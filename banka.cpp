@@ -2,6 +2,62 @@
 #include <string>
 using namespace std;
 
+template <class T>
+class List
+{
+    private:
+        T* items;
+        int capacity;
+        int count;
+
+    public:
+        List(int cap);
+        ~List();
+
+        void Add(T item);
+        T Get(int index);
+        int GetCount();
+};
+
+template <class T>
+List<T>::List(int cap)
+{
+    this->capacity = cap;
+    this->count = 0;
+    this->items = new T[this->capacity];
+}
+
+template <class T>
+List<T>::~List()
+{
+    delete[] this->items;
+}
+
+template <class T>
+void List<T>::Add(T item)
+{
+    if(this->count < this->capacity)
+    {
+        this->items[this->count++] = item;
+    }
+}
+
+template <class T>
+T List<T>::Get(int index)
+{
+    if(index >= 0 && index < this->count)
+    {
+        return this->items[index];
+    }
+    return T(); 
+}
+
+template <class T>
+int List<T>::GetCount()
+{
+    return this->count;
+}
+
 class Client
 {
     private:
@@ -71,9 +127,7 @@ class Account : public AbstractAccount
         static int objectsCount;
         static double defaultInterestRate;
         int number;
-
         double interestRate;
-
         Client *owner;
 
     protected:
@@ -151,7 +205,6 @@ Account::Account(int n, Client *c)
     this->owner = c;
     this->balance = 0.0;
     this->interestRate = -1.0;
-
     Account::objectsCount += 1;
 }
 
@@ -271,11 +324,8 @@ void Account::SetInterestRate(double ir)
 class Bank
 {
     private:
-        Client** clients;
-        int clientsCount;
-
-        Account** accounts;
-        int accountsCount;
+        List<Client*>* clients;
+        List<Account*>* accounts;
 
     public:
         Bank(int c, int a);
@@ -295,37 +345,32 @@ class Bank
 
 Bank::Bank(int c, int a)
 {
-    this->clientsCount = 0;
-    this->clients = new Client*[c];
-
-    this->accountsCount = 0;
-    this->accounts = new Account*[a];
+    this->clients = new List<Client*>(c);
+    this->accounts = new List<Account*>(a);
 }
 
 Bank::~Bank()
 {
-    for(int i = 0; i < clientsCount; i++)
+    for(int i = 0; i < this->clients->GetCount(); i++)
     {
-        delete clients[i];
+        delete this->clients->Get(i);
     }
+    delete this->clients;
 
-    delete[] clients;
-
-    for(int i = 0; i < accountsCount; i++)
+    for(int i = 0; i < this->accounts->GetCount(); i++)
     {
-        delete accounts[i];
+        delete this->accounts->Get(i);
     }
-        
-    delete[] accounts;
+    delete this->accounts;
 }
 
 Client* Bank::GetClient(int c)
 {
-    for(int i = 0; i < clientsCount; i++)
+    for(int i = 0; i < this->clients->GetCount(); i++)
     {
-        if(clients[i]->GetCode() == c)
+        if(this->clients->Get(i)->GetCode() == c)
         {
-            return clients[i];
+            return this->clients->Get(i);
         }
     }
     return nullptr;
@@ -333,10 +378,10 @@ Client* Bank::GetClient(int c)
 
 Account* Bank::GetAccount(int n)
 {
-    for(int i = 0; i < accountsCount; i++)
+    for(int i = 0; i < this->accounts->GetCount(); i++)
     {
-        if(accounts[i]->GetNumber() == n)
-            return accounts[i];
+        if(this->accounts->Get(i)->GetNumber() == n)
+            return this->accounts->Get(i);
     }
     return nullptr;
 }
@@ -344,42 +389,44 @@ Account* Bank::GetAccount(int n)
 Client* Bank::CreateClient(int c, string n)
 {
     Client* newClient = new Client(c, n);
-    clients[clientsCount++] = newClient;
+    this->clients->Add(newClient);
     return newClient;
 }
 
 Account* Bank::CreateAccount(int n, Client *c)
 {
     Account* acc = new Account(n, c);
-    accounts[accountsCount++] = acc;
+    this->accounts->Add(acc);
     return acc;
 }
 
 Account* Bank::CreateAccount(int n, Client *c, double ir)
 {
     Account* acc = new Account(n, c, ir);
-    accounts[accountsCount++] = acc;
+    this->accounts->Add(acc);
     return acc;
 }
 
 PartnerAccount* Bank::CreateAccount(int n, Client *c, Client *p)
 {
     PartnerAccount* acc = new PartnerAccount(n, c, p);
-    accounts[accountsCount++] = acc;
+    this->accounts->Add(acc);
     return acc;
 }
 
 PartnerAccount* Bank::CreateAccount(int n, Client *c, Client *p, double ir)
 {
     PartnerAccount* acc = new PartnerAccount(n, c, p, ir);
-    accounts[accountsCount++] = acc;
+    this->accounts->Add(acc);
     return acc;
 }
 
 void Bank::AddInterest()
 {
-    for(int i = 0; i < accountsCount; i++)
-        accounts[i]->AddInterest();
+    for(int i = 0; i < this->accounts->GetCount(); i++)
+    {
+        this->accounts->Get(i)->AddInterest();
+    }
 }
 
 int main()
@@ -483,20 +530,15 @@ int main()
     pa = myBank->CreateAccount(1, o, p);
 
     cout << a->GetOwner()->GetName() << endl;
-    //cout << a->GetPartner()->GetName() << endl;
     cout << pa->GetPartner()->GetName() << endl;
-
     cout << myBank->GetClient(1)->GetName() << endl;
-    //cout << myBank->GetClient(1)->GetPartner() << endl;
 
     // test změna chování dědičnosti
-
     CreditAccount *ca = new CreditAccount(1, o, 1000);
     cout << ca->CanWithdraw(1000) << endl;
 
     Account *a1 = ca;
     cout << a1->CanWithdraw(1000) << endl;
-
     cout << ca->Withdraw(1000) << endl;
 
     // test abstraktni trida
@@ -511,7 +553,6 @@ int main()
     cout << "\n--- konec testu ---" << endl;
 
     delete ca;
-
     delete myBank;
 
     getchar();
