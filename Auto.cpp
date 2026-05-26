@@ -3,129 +3,129 @@
 
 using namespace std;
 
-class GeometrickyObjekt
-{
-    protected:
-        string nazev;
-
-    public:
-        GeometrickyObjekt(string n);
-        ~GeometrickyObjekt();
-
-        string GetNazev();
-        double Obsah();
-        double Obvod();
-};
-
-class Obdelnik : public GeometrickyObjekt
+class Auto
 {
     private:
-        double stranaA;
-        double stranaB;
+        string znacka;
+        string model;
+        int rokVyroby;
 
     public:
-        Obdelnik(double a, double b);
-        
-        double Obsah();
-        double Obvod();
+        Auto(string z, string m, int r);
+        virtual ~Auto(); // Virtuální kvůli polymorfismu
+
+        void UjedVzdalenost(double km);
+        virtual void VypisInfo();
+
+        string GetZnacka();
+        string GetModel();
 };
 
-class Kruh : public GeometrickyObjekt
+class OsobniAuto : public Auto
 {
     private:
-        static double pi;
-        double polomer;
+        int pocetMist; 
 
     public:
-        static double GetPi();
-        Kruh(double r);
+        OsobniAuto(string z, string m, int r, int mista);
 
-        double Obsah();
-        double Obvod();
+        void VypisInfo();
 };
 
-double Kruh::pi = 3.14;
-//Metody třídy GeometrickyObjekt
-GeometrickyObjekt::GeometrickyObjekt(string n)
+class NakladniAuto : public Auto
 {
-    this->nazev = n;
+    private:
+        double maxNosnost;     
+        double aktualniNaklad; 
+
+    public:
+        NakladniAuto(string z, string m, int r, double nosnost);
+
+        bool NalozNaklad(double tuny);
+        void SlozNaklad(double tuny);
+        void VypisInfo();
+};
+
+Auto::Auto(string z, string m, int r)
+{
+    this->znacka = z;
+    this->model = m;
+    this->rokVyroby = r;
 }
 
-GeometrickyObjekt::~GeometrickyObjekt()
+Auto::~Auto()
 {
 
 }
 
-string GeometrickyObjekt::GetNazev()
+void Auto::VypisInfo()
 {
-    return this->nazev;
+    cout << "Vozidlo: " << this->znacka << " " << this->model << " (" << this->rokVyroby << ")" << endl;
 }
 
-double GeometrickyObjekt::Obsah()
+string Auto::GetZnacka()
 {
-    return 0.0;
+    return this->znacka;
 }
 
-double GeometrickyObjekt::Obvod()
+string Auto::GetModel()
 {
-    return 0.0;
+    return this->model;
 }
 
-// Metody třídy Obdelnik
-Obdelnik::Obdelnik(double a, double b) : GeometrickyObjekt("Obdelnik")
+// Metody třídy OsobniAuto
+OsobniAuto::OsobniAuto(string z, string m, int r, int mista) : Auto(z, m, r)
 {
-    this->stranaA = a;
-    this->stranaB = b;
+    this->pocetMist = mista;
 }
 
-double Obdelnik::Obsah()
+void OsobniAuto::VypisInfo()
 {
-    return this->stranaA * this->stranaB;
+    Auto::VypisInfo(); // Volání metody předka
+    cout << " | Typ: Osobni, Pocet mist: " << this->pocetMist << "\n" << endl;
 }
 
-double Obdelnik::Obvod()
+
+// Metody třídy NakladniAuto
+NakladniAuto::NakladniAuto(string z, string m, int r, double nosnost) : Auto(z, m, r)
 {
-    return 2 * (this->stranaA + this->stranaB);
+    this->maxNosnost = nosnost;
+    this->aktualniNaklad = 0.0;
 }
 
-//Metody třídy Kruh
-Kruh::Kruh(double r) : GeometrickyObjekt("Kruh")
+bool NakladniAuto::NalozNaklad(double tuny)
 {
-    this->polomer = r;
+    if(this->aktualniNaklad + tuny <= this->maxNosnost)
+    {
+        this->aktualniNaklad += tuny;
+        return true;
+    }
+    return false; 
 }
 
-double Kruh::GetPi()
+void NakladniAuto::SlozNaklad(double tuny)
 {
-    return Kruh::pi;
+    this->aktualniNaklad = this->aktualniNaklad - tuny;
+    cout << "Nakladni auto" << this->GetZnacka() << " vylozilo " << tuny << " tun" << endl;
 }
 
-double Kruh::Obsah()
+void NakladniAuto::VypisInfo()
 {
-    return Kruh::pi * this->polomer * this->polomer;
-}
-
-double Kruh::Obvod()
-{
-    return 2 * Kruh::pi * this->polomer;
+    Auto::VypisInfo(); // Volání metody předka
+    cout << " | Typ: Nakladni, Nosnost: " << this->maxNosnost 
+         << "\n | Aktualne nalozeno: " << this->aktualniNaklad << "\n" << endl;
 }
 
 int main()
-{
-    Obdelnik *o = new Obdelnik(4.0, 5.0);
-    Kruh *k = new Kruh(3.0);
+{    
+    OsobniAuto skodovka("Skoda", "Octavia", 2020, 5);
+    NakladniAuto tatra("Tatra", "Phoenix", 2018, 15.5);
 
-    cout << o->GetNazev() << " -> Obsah: " << o->Obsah() << ", Obvod: " << o->Obvod() << endl;
-    cout << k->GetNazev() << " (vyuziva pi = " << Kruh::GetPi() << ") -> Obsah: " << k->Obsah() << ", Obvod: " << k->Obvod() << endl;
+    tatra.NalozNaklad(10.0);
 
+    cout << "\n--- Vypis informaci o vozidlech ---" << endl;
+    skodovka.VypisInfo();
+    tatra.VypisInfo();
 
-    cout << "\n--- Vyuziti substitucniho principu ---" << endl;
-    
-    GeometrickyObjekt* objekt1 = o; 
-    GeometrickyObjekt* objekt2 = k;
-
-    cout << objekt1->GetNazev() << " pres ukazatel -> Obsah: " << objekt1->Obsah() << ", Obvod: " << objekt1->Obvod() << endl;
-    cout << objekt2->GetNazev() << " pres ukazatel -> Obsah: " << objekt2->Obsah() << ", Obvod: " << objekt2->Obvod() << endl;
-
-    getchar();
     return 0;
 }
